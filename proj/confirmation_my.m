@@ -34,13 +34,17 @@ end
 function tst0( dataId )
 % Ocam at calibration imaged 3D points as (x,y,z)=(0,0,-500)
 [ocam_model, X, x, L, l]= mydata_get;
-%[N, M0, zRefList]= mk_3d_pts( 1 );
-[N, M0, zRefList]= mk_3d_pts( dataId );
+
+if dataId==0
+else
+    %[N, M0, zRefList]= mk_3d_pts( 1 );
+    [N, M0, zRefList]= mk_3d_pts( dataId );
+end
 
 nIter = numel(zRefList);     % FC
 colorCycle = [1 0 0;   % red
               0 1 0;   % green
-              1 1 0];  % yellow     % FC
+              0 0 1];  % blue     % FC
 
 figure(100+dataId); clf
 for k = 1:nIter             % FC
