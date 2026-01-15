@@ -25,6 +25,7 @@ switch dataId
         % [model, X,x, L,l]= mydata_get;
         [varargout{1}, varargout{2}, varargout{3}]= get_data1;
         [varargout{1}, varargout{4}, varargout{5}]= get_data2;
+        varargout{6}= 'frame7.jpg';
 
     case 'mXxLl_show'
         % usage: mydata_get('mXxLl_show')
@@ -55,6 +56,14 @@ init_r = [0.0294; 1.8805; -2.4978];
 init_t = [963.4143; 340.5490; 200];
 %init_t = [963.4143; 340.5490; 1000]; %200];
 %init_t = [963.4143; 1000; 1000]; %200];
+
+global MyDataIni
+if isfield(MyDataIni, 'r0')
+    init_r= MyDataIni.r0;
+end
+if isfield(MyDataIni, 't0')
+    init_t= MyDataIni.t0;
+end
 
 if nargout==1
     init_r= struct('init_r',init_r, 'init_t',init_t);

@@ -1,4 +1,4 @@
-function [x,X]= world2camx(X, ocam_model, cTw)
+function [x,X]= world2camx(X, model, cTw)
 %   X               3x8               192  double              
 %   cTw             4x4               128  double              
 %   ocam_model      1x1              1440  struct              
@@ -14,8 +14,8 @@ function [x,X]= world2camx(X, ocam_model, cTw)
 %     height: 2880
 
 X= rigid_transf( X, cTw );
-x= world2cam(X, ocam_model);
-x= img_horiz_mirror( x, ocam_model.width );
+x= world2cam(X, model);
+x= img_horiz_mirror( x, model.width );
 
 
 function X= rigid_transf( X, cTw )

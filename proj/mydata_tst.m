@@ -1,11 +1,12 @@
 function mydata_tst( tstId )
 if nargin<1
-    tstId= 2; %0; %1;
+    tstId= 3; %2; %0; %1;
 end
 switch tstId
     case 0, MD= data_base;
     case 1, MD= data_load;
-    case 2, MD= data_load_chg;
+    case 2, MD= data_base_chg(0);
+    case 3, MD= data_base_chg(1);
 end
 
 % show 2D and 3D data
@@ -37,9 +38,14 @@ end
 subplot(121); box on; grid on
 draw_camera(eye(4), struct('scale',1e4)); view(3)
 
-subplot(122); axis ij
+subplot(122); draw_square; axis ij; axis tight
 
 return
+
+
+function draw_square
+W= 2880; m= [0 0; 0 W; W W; W 0; 0 0]';
+plot(m(1,:),m(2,:));
 
 
 function MD= data_load
@@ -82,21 +88,34 @@ end
 return
 
 
-function MD= data_load_chg
+function MD= data_base_chg( optimFlag )
 % initial data
-[ocam_model, X,~, L,~]= mydata_get;
+[model, X0,x0, L0,l0, ifname]= mydata_get;
 
-% project 3D data
-R=rotx(90); t=[-1e3 1e3 -1e3]';
-[x,l, X,L]= project_pts_lines(X,L, ocam_model, [R t; 0 0 0 1]);
+% replace 2D data by reprojected 3D data
+R= rotx(90-0); t=[-.9e3 .5e3 -.45e3]';
+cTw= [R t; 0 0 0 1];
+[x,l, X,L]= project_pts_lines(X0,L0, model, cTw);
 
-% reformat data
-MD= conv_XxLl_to_MD(X, x, L, l);
-
-
-function [x,l, X,L]= project_pts_lines(X,L, ocam_model, cTw)
-% apply 3D transf
-[x,X]= world2camx(X, ocam_model, cTw);
-for i=1:length(L)
-    [l{i},L{i}]= world2camx(L{i}, ocam_model, cTw);
+% TODO: optimize (R,t) and model such that (x,l) to become close to (x0,l0)
+if optimFlag
+    [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname );
+    [x,l, X,L]= project_pts_lines(X0,L0, model, cTw);
 end
+
+% reformat data, to plot
+MD= conv_XxLl_to_MD(X, x, L, l);
+return
+
+
+function [x,l, X,L]= project_pts_lines(X,L, model, cTw)
+% apply 3D transf
+[x,X]= world2camx(X, model, cTw);
+for i=1:length(L)
+    [l{i},L{i}]= world2camx(L{i}, model, cTw);
+end
+
+
+function [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname )
+return
+
