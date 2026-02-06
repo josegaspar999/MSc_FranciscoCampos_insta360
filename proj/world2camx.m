@@ -13,6 +13,16 @@ function [x,X]= world2camx(X, model, cTw)
 %      width: 2880
 %     height: 2880
 
+if iscell(X)
+    % allow X to be a set of point arrays
+    x= {};
+    for i=1:length(X)
+        [x{i}, X{i}]= world2camx(X{i}, model, cTw);
+    end
+    return
+end
+
+% main work to do
 X= rigid_transf( X, cTw );
 x= world2cam(X, model);
 x= img_horiz_mirror( x, model.width );

@@ -305,8 +305,8 @@ end
 Xc = (R * worldPts + tvec(:));
 %proj = world2cam(Xc, ocam_model);
 proj = insta360proj(worldPts, ocam_model, [R tvec(:)]);
-mydata('backup', sprintf('Pts',i), Xc);
-mydata('backup', sprintf('pts',i), proj);
+mydata('backup', 'Pts', Xc);
+mydata('backup', 'pts', proj);
 
 % Compute residuals -> pairs of points
 diff = proj - imgPts;

@@ -111,11 +111,29 @@ return
 function [x,l, X,L]= project_pts_lines(X,L, model, cTw)
 % apply 3D transf
 [x,X]= world2camx(X, model, cTw);
-for i=1:length(L)
-    [l{i},L{i}]= world2camx(L{i}, model, cTw);
-end
+[l,L]= world2camx(L, model, cTw);
+% for i=1:length(L)
+%     [l{i},L{i}]= world2camx(L{i}, model, cTw);
+% end
 
 
 function [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname )
+
+% cost= world2camx_cost( params, worldLines, imgLines, worldPts, imgPts, ocam_model )
+
+% R= rotx(90+20); t=[-.9e3 1.1e3 -.5e3]';
+% [X, L]= rigid_transf_pts_lines( X, L, R, t );
+% [x, l]= mirror_horiz_pts_lines( x, l, model );
+% 
+% global MyDataIni
+% MyDataIni= struct('r0',[0 0 0]', 't0',[0 0 0]');
+% [bestParams, fitError] = optimizePoseOcam(L, l, X, x, model);
+% MyDataIni= [];
+% 
+% show_results2( model, X, x, L, l, bestParams );
+% plot_scene(X, L, bestParams);
+% fprintf('Final reprojection error: %.3f pixels\n', fitError);
+
+
 return
 
