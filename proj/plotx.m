@@ -1,5 +1,7 @@
 function plotx(op, varargin)
 
+% function under construction
+
 switch op
     %     case 'results1'
     %     case 'results2'

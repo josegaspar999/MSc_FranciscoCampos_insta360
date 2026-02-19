@@ -1,9 +1,9 @@
 function [x,X]= world2camx(X, model, cTw)
 %   X               3x8               192  double              
+%   model           1x1              1440  struct              
 %   cTw             4x4               128  double              
-%   ocam_model      1x1              1440  struct              
 %
-% ocam_model =   struct with fields:
+% model =   struct with fields:
 %         ss: [5×1 double]
 %         xc: 1440
 %         yc: 1440
@@ -22,6 +22,11 @@ if iscell(X)
     return
 end
 
+% recent "model" versions contain cTw
+if nargin<3 && isfield(model, 'rvec')
+    cTw= [rodrigues(model.rvec) model.tvec(:); 0 0 0 1];
+end
+
 % main work to do
 X= rigid_transf( X, cTw );
 x= world2cam(X, model);
@@ -29,6 +34,13 @@ x= img_horiz_mirror( x, model.width );
 
 
 function X= rigid_transf( X, cTw )
+if size(cTw,1)~=4
+    if size(cTw,1)==3
+        cTw= [cTw; 0 0 0 1];
+    else
+        error('cTw not 3 nor 4 lines');
+    end
+end
 X= hrem( cTw*hset(X) );
 
 
