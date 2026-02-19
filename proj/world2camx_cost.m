@@ -9,66 +9,50 @@ function cost= world2camx_cost( params, worldLines, imgLines, worldPts, imgPts )
 %   worldPts         3x8                192  double   
 %   imgPts           2x8                128  double              
 
+if nargin<1
+    mydata_tst(3);
+    return
+end
+
 global MD0
 if isempty(MD0)
-    MD0.Pts= worldPts;
-    MD0.pts= imgPts;
-    for i=1:length(worldLines)
-        MD0.(sprintf('Line%d',i))= worldLines{i};
-        MD0.(sprintf('line%d',i))= imgLines{i};
-    end
+    MD0= vars_to_struct( worldLines, imgLines, worldPts, imgPts );
 end
 
 params= world2camx_params( 'paramsExpandIfNeeded', params);
 model= world2camx_params( 'params2struct', params );
 tvec= model.tvec;
 R= rodrigues(model.rvec);
-
-% Lines
-% Project via Scaramuzza model
-r_all = [];
 errAcc= 0;
-mydata('reset');
+
+% Lines, project via Scaramuzza model
+worldLines2 = worldLines;
+imgLines2 = imgLines;
 for i = 1:numel(worldLines)
 
-    Xc = (R * worldLines{i} + tvec(:));
-    proj = world2camx(worldLines{i}, model, [R tvec(:)]);
-    mydata('backup', sprintf('Line%d',i), Xc);
-    mydata('backup', sprintf('line%d',i), proj);
+    imgLines2{i} = world2camx(worldLines{i}, model, [R tvec(:)]);
+    worldLines2{i} = (R * worldLines{i} + tvec(:));
 
     % Compute residuals -> lines
-    D = pdist2(proj', imgLines{i}');
+    D = pdist2(imgLines2{i}', imgLines{i}');
     [~, minIdx] = min(D, [], 2);
 
     % Compute residuals (vector form)
     closestPts = imgLines{i}(:, minIdx);
-    diff = proj - closestPts;
-    errAcc= errAcc +mean(sqrt(sum(diff.*diff,1)));
-    r = diff(:);   % flatten to 2N1×1
-    r_all = [r_all; r];
+    err = imgLines2{i} - closestPts;
+    errAcc= errAcc +mean(sqrt(sum(err.*err,1)));
 end
 num1= numel(worldLines);
 errAcc= errAcc/num1; % normalize by the number of lines
 
-% Points
-% Project via Scaramuzza model
-Xc = (R * worldPts + tvec(:));
-%proj = world2cam(Xc, ocam_model);
-%proj = insta360proj(worldPts, ocam_model, [R tvec(:)]);
-proj = world2camx(worldPts, model, [R tvec(:)]);
-mydata('backup', 'Pts', Xc);
-mydata('backup', 'pts', proj);
-
-% Compute residuals -> pairs of points
-diff = proj - imgPts;
-r = 37.5 * diff(:);
-r_all = [r_all; r];
-
+% Points, project via Scaramuzza model & compute residuals
+worldPts2 = (R * worldPts + tvec(:));
+imgPts2 = world2camx(worldPts, model, [R tvec(:)]);
+err2 = imgPts2 - imgPts;
+err2= mean( sqrt(sum(err2.*err2,1)) );
 num2= size(imgPts,2);
-errAcc= (num1*errAcc +num2*mean(sqrt(sum(diff.*diff,1))))/(num1 + num2);
 
-% %r_all = norm(r_all);
-% cost = norm(r_all)/length(r_all);
+errAcc= (num1*errAcc +num2*err2)/(num1 + num2);
 cost= errAcc;
 
 % Cost tracking
@@ -76,16 +60,25 @@ global MyCost
 if cost <= MyCost
     figure(124); clf; hold on
     plot_MD( MD0, struct('cstrForAll', 'c.') )
-    MD= mydata('getall');
+    MD= vars_to_struct( worldLines2, imgLines2, worldPts2, imgPts2 );
     plot_MD( MD, sprintf('cost=%f', cost) )
     drawnow
 
     MyCost = cost;
-    mydata('backup','ocam_model',model);
-    mydata('backup','params',params);
-    mydata('backup','worldPts', worldPts);
-    mydata('backup','worldLines', worldLines);
-    mydata('backup','cost',cost);
+    %     mydata('backup','ocam_model',model);
+    %     mydata('backup','params',params);
+    %     mydata('backup','worldPts', worldPts);
+    %     mydata('backup','worldLines', worldLines);
+    %     mydata('backup','cost',cost);
 end
 
 return
+
+
+function MD0= vars_to_struct( worldLines, imgLines, worldPts, imgPts )
+MD0.Pts= worldPts;
+MD0.pts= imgPts;
+for i=1:length(worldLines)
+    MD0.(sprintf('Line%d',i))= worldLines{i};
+    MD0.(sprintf('line%d',i))= imgLines{i};
+end
