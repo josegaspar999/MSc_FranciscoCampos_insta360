@@ -3,7 +3,7 @@ function confirmation_my(tstId)
 % but has a more recent (this file) "confirmation_my.m"
 
 if nargin<1
-    tstId= [-1 -2]; %-2; %-1; %-2; %2; %1;
+    tstId= 3; %[-1 -2]; %-2; %-1; %-2; %2; %1;
 end
 if length(tstId)>1
     for i=tstId, confirmation_my(i); end
@@ -28,6 +28,7 @@ switch tstId
     case -4, tst0(4)
     case 1, tst1
     case 2, tst2
+    case 3, tst3
 end
 
 
@@ -35,13 +36,17 @@ end
 function tst0( dataId )
 % Ocam at calibration imaged 3D points as (x,y,z)=(0,0,-500)
 [ocam_model, X, x, L, l]= mydata_get;
-%[N, M0, zRefList]= mk_3d_pts( 1 );
-[N, M0, zRefList]= mk_3d_pts( dataId );
+
+if dataId==0
+else
+    %[N, M0, zRefList]= mk_3d_pts( 1 );
+    [N, M0, zRefList]= mk_3d_pts( dataId );
+end
 
 nIter = numel(zRefList);     % FC
 colorCycle = [1 0 0;   % red
               0 1 0;   % green
-              1 1 0];  % yellow     % FC
+              0 0 1];  % blue     % FC
 
 figure(100+dataId); clf
 for k = 1:nIter             % FC
@@ -160,6 +165,41 @@ fprintf('Final reprojection error: %.3f pixels\n', fitError);
 return
 
 
+function tst3
+[model, X, x, L, l]= mydata_get;
+% plot_scene( X, L, mydata_get('ini') );
+
+% bring data closer to work
+%R=rotx(90); t=[-1e3 1e3 -1e3]';
+R= rotx(90+20); t=[-.9e3 1.1e3 -.5e3]';
+[X, L]= rigid_transf_pts_lines( X, L, R, t );
+[x, l]= mirror_horiz_pts_lines( x, l, model );
+
+global MyDataIni
+MyDataIni= struct('r0',[0 0 0]', 't0',[0 0 0]');
+[bestParams, fitError] = optimizePoseOcam(L, l, X, x, model);
+MyDataIni= [];
+
+show_results2( model, X, x, L, l, bestParams );
+plot_scene(X, L, bestParams);
+fprintf('Final reprojection error: %.3f pixels\n', fitError);
+return
+
+
+function [X, L]= rigid_transf_pts_lines( X, L, R, t )
+cTw= [R t; 0 0 0 1];
+X= hrem( cTw*hset(X) );
+for i=1:length(L)
+    L{i}= hrem( cTw*hset(L{i}) );
+end
+
+
+function [x, l]= mirror_horiz_pts_lines( x, l, model )
+x(1,:)= model.width-x(1,:);
+for i=1:length(l)
+    l{i}(1,:)= model.width-l{i}(1,:);
+end
+
 
 function m = insta360proj(M, model, cTw)
 
@@ -214,8 +254,10 @@ if 0
     residuals = costFun(bestParams);
     fitError = sqrt(mean(residuals.^2));
 else
-    x1= params_select(1, x0, 1:6 );
+    x1= params_select(1, x0, 1:length(x0) ); % work all
+    %x1= params_select(1, x0, 1:6 ); % keep out the intrinsics
     costFun = @(params) norm(reprojResidualsOcam(params, worldLines, imgLines, worldPts, imgPts, ocam_model));
+    % ^freeze at this moment all input data, except "params"
     [bestParams, fitError] = fminsearch(costFun, x1);
 end
 
@@ -272,8 +314,8 @@ end
 Xc = (R * worldPts + tvec(:));
 %proj = world2cam(Xc, ocam_model);
 proj = insta360proj(worldPts, ocam_model, [R tvec(:)]);
-mydata('backup', sprintf('Pts',i), Xc);
-mydata('backup', sprintf('pts',i), proj);
+mydata('backup', 'Pts', Xc);
+mydata('backup', 'pts', proj);
 
 % Compute residuals -> pairs of points
 diff = proj - imgPts;
