@@ -25,6 +25,7 @@ switch tstId
     case -1, tst0(1)
     case -2, tst0(2)
     case -3, tst0(3)
+    case -4, tst0(4)
     case 1, tst1
     case 2, tst2
     case 3, tst3
@@ -97,7 +98,6 @@ elseif dataId == 2
     zRefList= [-10 -50 -200 -400];
 
 elseif dataId == 3
-
     theta = pi; % 180 degrees
     Rz = [cos(theta), -sin(theta), 0;
           sin(theta),  cos(theta), 0;
@@ -111,6 +111,15 @@ elseif dataId == 3
 
     N = size(M0,2);
     zRefList= [-5 -20 -50 -100 -200 -300];
+
+elseif dataId == 4
+
+    M0 = [-10  0              10 -10
+          -3  15*sqrt(3)/2-3 -3  -3
+          0  0                0   0];
+
+    N = 4
+    zRefList= [-20 20];
 
 
 end
