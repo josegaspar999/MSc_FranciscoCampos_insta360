@@ -107,7 +107,7 @@ function [x,l, X,L]= project_pts_lines(X,L, model, cTw)
 [l,L]= world2camx(L, model, cTw);
 
 
-function [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname )
+function [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname0 )
 %
 % model = struct with fields:
 %         ss: [5×1 double]
@@ -119,37 +119,47 @@ function [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname )
 %      width: 2880
 %     height: 2880
 
-m1= model; % add cTw into model "m1", and convert to an array "params":
-m1.tvec= cTw(1:3,4);
-m1.rvec= invRodrigues(cTw(1:3,1:3));
-params = world2camx_params( 'struct2params', m1 );
-
+% --- cost function:
 % cost= world2camx_cost( params, worldLines, imgLines, worldPts, imgPts )
-% cost= world2camx_cost( params, L0,l0, X0,x0 );
+costFun = @(params) world2camx_cost( params, L0,l0, X0,x0 );
 
+% --- starting data:
+bfname= './mydata_tst_';
+d= dir([bfname '*.mat']);
+if ~isempty(d)
+    fname= filenames_last_only( [bfname '*.mat'] );
+    load(fname, 'ifname', 'm2','p2','c2')
+    if ~strcmp(ifname0, ifname)
+        button= questdlg('Loaded ifname mismatch ifname0. Abort?', ...
+            'Yes','No','No');
+        if strcmp(button, 'Yes')
+            error('Aborted work.');
+        end
+    end
+    m1= m2; p1= p2; c1= c2;
+else
+    m1= model; % add cTw into model "m1", and convert to an array "params":
+    m1.tvec= cTw(1:3,4);
+    m1.rvec= invRodrigues(cTw(1:3,1:3));
+    p1= world2camx_params( 'struct2params', m1 );
+    c1= costFun( p1 );
+end
+
+% --- optimization:
 global MyCost
 MyCost= inf;
-costFun = @(params) world2camx_cost( params, L0,l0, X0,x0 );
-p2= fminsearch( costFun, params );
+p2= fminsearch( costFun, p1 );
+c2= costFun( p2 );
 m2= world2camx_params( 'params2struct', p2 );
 
+% --- save data:
+fname= mkfname( bfname, 'mat', struct('outputFormat',2) );
+ifname= ifname0;
+save(fname, 'ifname', 'm1','p1','c1', 'm2','p2','c2', ...
+    'L0','l0', 'X0','x0');
+
+% --- return results:
 model= m2;
 cTw= [rodrigues(model.rvec(:)) model.tvec(:)];
-
-% R= rotx(90+20); t=[-.9e3 1.1e3 -.5e3]';
-% [X, L]= rigid_transf_pts_lines( X, L, R, t );
-% [x, l]= mirror_horiz_pts_lines( x, l, model );
-% 
-% global MyDataIni
-% MyDataIni= struct('r0',[0 0 0]', 't0',[0 0 0]');
-% [bestParams, fitError] = optimizePoseOcam(L, l, X, x, model);
-% MyDataIni= [];
-% 
-% show_results2( model, X, x, L, l, bestParams );
-% plot_scene(X, L, bestParams);
-% fprintf('Final reprojection error: %.3f pixels\n', fitError);
-
-% [x,l, X,L]= project_pts_lines(X0,L0, model, cTw);
-
 return
 
