@@ -11,12 +11,12 @@ switch op
 
     case 'save'
         % usage: mydata save
-        ofname= mkfname( 'mydata_', 'mat', struct('outputFormat',3) );
+        ofname= mkfname( 'mydata1_', 'mat', struct('outputFormat',3) );
         MD.ofname= ofname;
         save(ofname, 'MD');
     case 'load'
         % usage: ret= mydata('load');
-        fname= filenames_last_only( './mydata_*.mat' );
+        fname= filenames_last_only( './mydata1_*.mat' );
         ret= load(fname);
 
     otherwise

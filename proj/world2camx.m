@@ -13,8 +13,13 @@ function [x,X]= world2camx(X, model, cTw)
 %      width: 2880
 %     height: 2880
 
+% recent "model" versions contain cTw
+if nargin<3 && isfield(model, 'rvec')
+    cTw= [rodrigues(model.rvec) model.tvec(:); 0 0 0 1];
+end
+
+% allow X to be a set of point arrays
 if iscell(X)
-    % allow X to be a set of point arrays
     x= {};
     for i=1:length(X)
         [x{i}, X{i}]= world2camx(X{i}, model, cTw);
@@ -22,15 +27,12 @@ if iscell(X)
     return
 end
 
-% recent "model" versions contain cTw
-if nargin<3 && isfield(model, 'rvec')
-    cTw= [rodrigues(model.rvec) model.tvec(:); 0 0 0 1];
-end
-
 % main work to do
 X= rigid_transf( X, cTw );
 x= world2cam(X, model);
 x= img_horiz_mirror( x, model.width );
+
+return % end of main function
 
 
 function X= rigid_transf( X, cTw )

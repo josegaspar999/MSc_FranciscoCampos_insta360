@@ -1,4 +1,4 @@
-function cost= world2camx_cost( params, worldLines, imgLines, worldPts, imgPts )
+function [cost, ret]= world2camx_cost( params, worldLines, imgLines, worldPts, imgPts )
 % Use 2D and 3D lines and points to assess the error in "params"
 % Use this function in fminsearch to optimize "params" (note that the other
 % arguments of this function are kept untouched)
@@ -16,7 +16,7 @@ end
 
 global MD0
 if isempty(MD0)
-    MD0= vars_to_struct( worldLines, imgLines, worldPts, imgPts );
+    MD0= mydata_mk_struct( worldLines, imgLines, worldPts, imgPts );
 end
 
 params= world2camx_params( 'paramsExpandIfNeeded', params);
@@ -26,13 +26,21 @@ R= rodrigues(model.rvec);
 err1= 0;
 
 % Lines, project via Scaramuzza model
-worldLines2 = worldLines;
-imgLines2 = imgLines;
+% worldLines2 = worldLines;
+% imgLines2 = imgLines;
+% for i = 1:numel(worldLines)
+%     [imgLines2{i}, worldLines2{i}] = world2camx(worldLines{i}, model, [R tvec(:)]);
+%     err= line_error( imgLines{i}',  imgLines2{i}', i==1 );
+%     err1= err1 +err;
+% end
+
+[imgLines2, worldLines2] = world2camx(worldLines, model, [R tvec(:)]);
 for i = 1:numel(worldLines)
     [imgLines2{i}, worldLines2{i}] = world2camx(worldLines{i}, model, [R tvec(:)]);
     err= line_error( imgLines{i}',  imgLines2{i}', i==1 );
     err1= err1 +err;
 end
+
 num1= numel(worldLines);
 err1= err1/num1; % normalize by the number of lines
 
@@ -45,15 +53,19 @@ err2= err_calc(err2');
 num2= size(imgPts,2);
 
 cost= (num1*err1 +num2*err2)/(num1 + num2);
+if nargout>1
+    ret= struct('err1',err1,'num1',num1,'err2',err2,'num2',num2);
+end
 
 % Cost tracking
 global MyCost
 if cost <= MyCost
     figure(124); clf; hold on
     plot_MD( MD0, struct('cstrForAll', 'c.') )
-    MD= vars_to_struct( worldLines2, imgLines2, worldPts2, imgPts2 );
+    MD= mydata_mk_struct( worldLines2, imgLines2, worldPts2, imgPts2 );
     %ts= sprintf('cost=%f', cost);
-    ts= sprintf('err1=%f (%d)%cerr2=%f (%d)', err1,num1, 10, err2,num2);
+    ts= sprintf('cost=%f%cerr1=%f (%d), err2=%f (%d)', ...
+        cost, 10, err1,num1, err2,num2);
     plot_MD( MD, ts )
     drawnow
 
@@ -175,12 +187,3 @@ L2 = [0; cumsum(l2)];
 
 % First index where xy2 is longer than xy1
 ind = find(L2 > L1(end), 1, 'first');
-
-
-function MD0= vars_to_struct( worldLines, imgLines, worldPts, imgPts )
-MD0.Pts= worldPts;
-MD0.pts= imgPts;
-for i=1:length(worldLines)
-    MD0.(sprintf('Line%d',i))= worldLines{i};
-    MD0.(sprintf('line%d',i))= imgLines{i};
-end

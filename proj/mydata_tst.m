@@ -4,7 +4,7 @@ function mydata_tst( tstId )
 % mydata_tst(3) % optimiz from orig data
 
 if nargin<1
-    tstId= 3; %0:3; %3; %2; %0; %1;
+    tstId= -1; %3; %0:3; %3; %2; %0; %1;
 end
 if length(tstId)>1
     for i=tstId, mydata_tst(i); end
@@ -16,10 +16,10 @@ switch tstId
     case 1, MD= data_load; tstr= 'old optimiz';
     case 2, MD= data_base_chg(0); tstr= 'new ^cT_w';
     case 3, MD= data_base_chg(1); tstr= 'new ^cT_w & optimiz';
+    case -1, show_optimization_results(); return
 end
 
 % show 2D and 3D data
-%figure(402+tstId); clf; %hold on
 figure(800+tstId); clf; %hold on
 plot_MD( MD, tstr )
 
@@ -124,7 +124,7 @@ function [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname0 )
 costFun = @(params) world2camx_cost( params, L0,l0, X0,x0 );
 
 % --- starting data:
-bfname= './mydata_tst_';
+bfname= './mydata2_';
 d= dir([bfname '*.mat']);
 if ~isempty(d)
     fname= filenames_last_only( [bfname '*.mat'] );
@@ -163,3 +163,59 @@ model= m2;
 cTw= [rodrigues(model.rvec(:)) model.tvec(:)];
 return
 
+
+% ----------------------------------------------------------
+function show_optimization_results
+bfname= './mydata2_';
+% fname= filenames_last_only( [bfname '*.mat'] );
+% show_optimization_result_impl( fname )
+
+d= dir([bfname '*.mat']);
+[~,ind]=sort({d.name});
+for i= ind
+    figure(900+i)
+    fname= d(i).name;
+    show_optimization_result_impl( fname )
+end
+
+
+function show_optimization_result_impl( fname )
+load(fname)
+% whos
+
+% Base data, points and lines, 2D and 3D:
+%   L0           1x5              12520  cell                
+%   l0           1x5             212808  cell                
+%   X0           3x8                192  double              
+%   x0           2x8                128  double              
+
+% Models and params (before and after optimization):
+%   m1           1x1               1824  struct              
+%   m2           1x1               1824  struct              
+%   p1          18x1                144  double              
+%   p2          18x1                144  double              
+
+% Costs found:
+%   c1           1x1                  8  double              
+%   c2           1x1                  8  double              
+
+%   fname        1x27                54  char                
+%   ifname       1x10                20  char                
+
+[x1,X1]= world2camx(X0, m1);
+[l1,L1]= world2camx(L0, m1);
+[x2,X2]= world2camx(X0, m2);
+[l2,L2]= world2camx(L0, m2);
+
+MD0= mydata_mk_struct( L0, l0, X0, x0 );
+MD1= mydata_mk_struct( L1, l1, X1, x1 );
+MD2= mydata_mk_struct( L2, l2, X2, x2 );
+
+clf; hold on
+plot_MD( MD0, struct('cstrForAll', 'm.') )
+plot_MD( MD1, struct('cstrForAll', 'c.') )
+plot_MD( MD2 ) %, struct('cstrForAll', 'b.') )
+title(sprintf('Original vs \ncost1=%f vs cost2=%f\n%s', c1, c2, ...
+    strrep(fname, '_','\_') ))
+
+return
