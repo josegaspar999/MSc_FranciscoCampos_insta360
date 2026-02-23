@@ -1,7 +1,8 @@
 function mydata_tst( tstId )
 % mydata_tst(0) % image data
-% mydata_tst(1) % optimiz reached (wrong)
-% mydata_tst(3) % optimiz from orig data
+% mydata_tst(1) % optimization reached (wrong)
+% mydata_tst(2) % new cTw
+% mydata_tst(3) % optimization from new cTw (or a previous optimization)
 
 if nargin<1
     tstId= -1; %3; %0:3; %3; %2; %0; %1;
@@ -51,18 +52,9 @@ return
 
 
 function MD= data_base
-MD= [];
 [~, X,x, L,l]= mydata_get;
-% show_results2( MD.ocam_model, X, x, L, l, MD.params )
-MD= conv_XxLl_to_MD(X, x, L, l);
-
-
-function MD= conv_XxLl_to_MD(X, x, L, l)
-MD= struct('Pts',X, 'pts',x);
-for i=1:length(L)
-    MD.(sprintf('Line%d',i))= L{i};
-    MD.(sprintf('line%d',i))= l{i};
-end
+MD= mydata_mk_struct( L,l, X,x );
+% plot_MD(MD)
 return
 
 
@@ -83,7 +75,7 @@ if optimFlag
 end
 
 % reformat data, to plot
-MD= conv_XxLl_to_MD(X, x, L, l);
+MD= mydata_mk_struct( L,l, X,x );
 return
 
 

@@ -7,3 +7,4 @@ To see original data:
 
 To see optimization results:
 >> mydata_tst(-1)
+	original=magenta, cost1=cyan, cost2=blue
