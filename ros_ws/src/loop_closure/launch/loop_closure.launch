@@ -1,0 +1,16 @@
+<launch>
+    <!-- Include the MSCKF Euro launch -->
+    <include file="$(find msckf_mono)/launch/euroc.launch"></include>
+
+    <group ns="loop_closure">
+        <!-- Keyframe selection parameters -->
+        <rosparam file="$(find loop_closure)/config/params.yaml" command="load"/>
+
+        <!-- Loop closure node -->
+        <node name="loop_closure_node" pkg="loop_closure" type="loop_closure_node" output="screen">
+            <!-- Remap pose and camstate topics to match MSCKF outputs -->
+            <remap from="pose_topic" to="/msckf/odom"/>
+            <remap from="camstate_topic" to="/msckf/track_info"/>
+        </node>
+    </group>
+</launch>

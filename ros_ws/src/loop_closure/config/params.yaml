@@ -1,0 +1,23 @@
+## Keyframe selection parameters
+
+# Motion policy
+
+dist_weights: [
+  0.25, 0.0, 0.0, 0.0, 0.0, 0.0,
+  0.0, 0.25, 0.0, 0.0, 0.0, 0.0,
+  0.0, 0.0, 0.25, 0.0, 0.0, 0.0,
+  0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+  0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+  0.0, 0.0, 0.0, 0.0, 0.0, 1.0
+]
+
+dist_threshold: 0.75
+
+# Temporal spacing
+
+minimum_frames: 10
+
+# Tracking and Novelty policies
+
+min_feature_count: 50
+new_features_ratio: 0.25
