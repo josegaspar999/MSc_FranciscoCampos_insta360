@@ -43,5 +43,5 @@ end
 
 R = eye(length(z));
 
-[ filter.x_k_k, filter.p_k_k ] = update( filter.x_k_km1, filter.p_k_km1, H,...
+[ filter.x_k_k, filter.p_k_k ] = updatems( filter.x_k_km1, filter.p_k_km1, H,...
     R, z, h );

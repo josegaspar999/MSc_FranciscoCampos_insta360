@@ -24,7 +24,7 @@
 % Date   :  May 2010
 %-----------------------------------------------------------------------
 
-function [ x_k_k, p_k_k, K ] = update( x_km1_k, p_km1_k, H, R, z, h )
+function [ x_k_k, p_k_k, K ] = updatems( x_km1_k, p_km1_k, H, R, z, h )
 
 if size(z,1)>0
 

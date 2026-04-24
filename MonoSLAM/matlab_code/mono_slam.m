@@ -92,7 +92,7 @@ for step=initIm+1:lastIm
     filter = ekf_update_hi_inliers( filter, features_info );
 
     % Plots,
-    plots; display( step );
+    plots; display( step ); drawnow
     
     % Save images
     % saveas( figure_all, sprintf( '%s/image%04d.fig', directory_storage_name, step ), 'fig' );
