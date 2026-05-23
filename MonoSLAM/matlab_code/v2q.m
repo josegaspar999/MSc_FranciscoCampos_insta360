@@ -33,9 +33,15 @@ function q=v2q(v)
 %
 
 theta=norm(v);
-if (theta <eps)
-    q=[1 0 0 0];
+if (theta < eps)
+    q = [1 0 0 0];   % identity quaternion
 else
-    v_n=v/norm(v);
-    q=quaternion(v_n,theta);
+    v_n = v / theta;
+
+    q = [ ...
+        cos(theta/2), ...
+        v_n(1)*sin(theta/2), ...
+        v_n(2)*sin(theta/2), ...
+        v_n(3)*sin(theta/2) ...
+    ];
 end
