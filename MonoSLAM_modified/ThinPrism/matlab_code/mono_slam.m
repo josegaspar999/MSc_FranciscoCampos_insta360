@@ -60,8 +60,8 @@ open(v);
 [x_k_k, p_k_k] = initialize_x_and_p;
 
 % Initialize EKF filter
-sigma_a = 0.009; % standar deviation for linear acceleration noise
-sigma_alpha = 0.009; % standar deviation for angular acceleration noise
+sigma_a = 0.007; % standar deviation for linear acceleration noise
+sigma_alpha = 0.007; % standar deviation for angular acceleration noise
 sigma_image_noise = 3.0; % standar deviation for measurement noise
 filter = ekf_filter( x_k_k, p_k_k, sigma_a, sigma_alpha, sigma_image_noise, 'constant_velocity' );
 
@@ -69,7 +69,7 @@ filter = ekf_filter( x_k_k, p_k_k, sigma_a, sigma_alpha, sigma_image_noise, 'con
 features_info = [];
 trajectory = zeros( 7, lastIm - initIm );
 % other
-min_number_of_features_in_image = 45;
+min_number_of_features_in_image = 30;
 generate_random_6D_sphere;
 measurements = []; predicted_measurements = [];
 
