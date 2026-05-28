@@ -1,0 +1,63 @@
+%-----------------------------------------------------------------------
+% 1-point RANSAC EKF SLAM from a monocular sequence
+%-----------------------------------------------------------------------
+
+% Copyright (C) 2010 Javier Civera and J. M. M. Montiel
+% Universidad de Zaragoza, Zaragoza, Spain.
+
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation. Read http://www.gnu.org/copyleft/gpl.html for details
+
+% If you use this code for academic work, please reference:
+%   Javier Civera, Oscar G. Grasa, Andrew J. Davison, J. M. M. Montiel,
+%   1-Point RANSAC for EKF Filtering: Application to Real-Time Structure from Motion and Visual Odometry,
+%   to appear in Journal of Field Robotics, October 2010.
+
+%-----------------------------------------------------------------------
+% Authors:  Javier Civera -- jcivera@unizar.es 
+%           J. M. M. Montiel -- josemari@unizar.es
+
+% Robotics, Perception and Real Time Group
+% Arag�n Institute of Engineering Research (I3A)
+% Universidad de Zaragoza, 50018, Zaragoza, Spain
+% Date   :  May 2010
+%-----------------------------------------------------------------------
+function uv_rot=rotate_with_dist_fc(cam, uv_ini, R_c2c1, t_c2c1, n, d)
+%
+% trasfer the image of points throug a camera rotation and translation
+%   the camera has radial distortion
+% Input 
+%   cam    - camera calibration
+%   uv_ini - initial camera postion point
+%   R_c2c1 - camera rotation matrix
+% Output
+%  uv_rot - points on the rotated image
+
+uv_ini_und = undistort_fm(uv_ini', cam)';   % Nx2 undistorted pixels
+
+% Inverse fisheye: undistorted pixel -> normalized 3D ray
+u = (uv_ini_und(:,1) - cam.Cx) / cam.fx;
+v = (uv_ini_und(:,2) - cam.Cy) / cam.fy;
+r = sqrt(u.^2 + v.^2);
+xn = u; yn = v;
+idx = r > 1e-12;
+xn(idx) = u(idx) .* (tan(r(idx)) ./ r(idx));
+yn(idx) = v(idx) .* (tan(r(idx)) ./ r(idx));
+
+% Apply 3D homography
+H3d = inv(R_c2c1 - t_c2c1 * n' / d);
+rays = H3d * [xn'; yn'; ones(1, numel(xn))];
+rays = rays ./ rays(3,:);
+
+% Forward fisheye: 3D ray -> undistorted pixel
+xn2 = rays(1,:)'; yn2 = rays(2,:)';
+r2 = sqrt(xn2.^2 + yn2.^2);
+u2 = xn2; v2 = yn2;
+idx2 = r2 > 1e-12;
+th2 = atan(r2(idx2));
+u2(idx2) = xn2(idx2) .* (th2 ./ r2(idx2));
+v2(idx2) = yn2(idx2) .* (th2 ./ r2(idx2));
+uv_rot_und = [cam.fx * u2 + cam.Cx, cam.fy * v2 + cam.Cy];
+
+uv_rot = distort_fm(uv_rot_und', cam)';

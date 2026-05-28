@@ -1,0 +1,2 @@
+
+Versões de MonoSLAM modificadas para incorporar modelos "simple pinhole" e "thin prism".
