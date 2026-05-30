@@ -60,8 +60,8 @@ open(v);
 [x_k_k, p_k_k] = initialize_x_and_p;
 
 % Initialize EKF filter
-sigma_a = 0.007; % standar deviation for linear acceleration noise
-sigma_alpha = 0.007; % standar deviation for angular acceleration noise
+sigma_a = 0.009; % standar deviation for linear acceleration noise
+sigma_alpha = 0.009; % standar deviation for angular acceleration noise
 sigma_image_noise = 3.0; % standar deviation for measurement noise
 filter = ekf_filter( x_k_k, p_k_k, sigma_a, sigma_alpha, sigma_image_noise, 'constant_velocity' );
 
