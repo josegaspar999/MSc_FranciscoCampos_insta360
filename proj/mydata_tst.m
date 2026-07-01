@@ -2,10 +2,10 @@ function mydata_tst( tstId )
 % mydata_tst(0) % image data
 % mydata_tst(1) % optimization reached (wrong)
 % mydata_tst(2) % new cTw
-% mydata_tst(3) % optimization from new cTw (or a previous optimization)
+% mydata_tst(3) % optimization of cTw from a previous optimization
 
 if nargin<1
-    tstId= -1; %3; %0:3; %3; %2; %0; %1;
+    tstId= -3; %-2; %-1; %3; %0:3; %3; %2; %0; %1;
 end
 if length(tstId)>1
     for i=tstId, mydata_tst(i); end
@@ -15,9 +15,11 @@ end
 switch tstId
     case 0, MD= data_base; tstr= 'orig data';
     case 1, MD= data_load; tstr= 'old optimiz';
-    case 2, MD= data_base_chg(0); tstr= 'new ^cT_w';
-    case 3, MD= data_base_chg(1); tstr= 'new ^cT_w & optimiz';
+    case 2, MD= data_base_chg(); tstr= 'new ^cT_w';
+    case 3, MD= data_base_chg(struct('optimFlag',1)); tstr= 'new ^cT_w & optimiz';
     case -1, show_optimization_results(); return
+    case -2, show_optimization_running(0); return
+    case -3, show_optimization_running(1); return
 end
 
 % show 2D and 3D data
@@ -59,7 +61,11 @@ return
 
 
 % ----------------------------------------------------------
-function MD= data_base_chg( optimFlag )
+function MD= data_base_chg( options )
+if nargin<1
+    options= [];
+end
+
 % initial data
 [model, X0,x0, L0,l0, ifname]= mydata_get;
 
@@ -69,8 +75,8 @@ cTw= [R t; 0 0 0 1];
 [x,l, X,L]= project_pts_lines(X0,L0, model, cTw);
 
 % TODO: optimize (R,t) and model such that (x,l) to become close to (x0,l0)
-if optimFlag
-    [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname );
+if def_or_opt( 0, options, 'optimFlag' )
+    [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname, options );
     [x,l, X,L]= project_pts_lines(X0,L0, model, cTw);
 end
 
@@ -99,7 +105,7 @@ function [x,l, X,L]= project_pts_lines(X,L, model, cTw)
 [l,L]= world2camx(L, model, cTw);
 
 
-function [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname0 )
+function [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname0, options )
 %
 % model = struct with fields:
 %         ss: [5×1 double]
@@ -116,20 +122,11 @@ function [model, cTw]= ocam_optim_calibr( model, cTw, X0,x0, L0,l0, ifname0 )
 costFun = @(params) world2camx_cost( params, L0,l0, X0,x0 );
 
 % --- starting data:
+% run from saved parameters data
 bfname= './mydata2_';
-d= dir([bfname '*.mat']);
-if ~isempty(d)
-    fname= filenames_last_only( [bfname '*.mat'] );
-    load(fname, 'ifname', 'm2','p2','c2')
-    if ~strcmp(ifname0, ifname)
-        button= questdlg('Loaded ifname mismatch ifname0. Abort?', ...
-            'Yes','No','No');
-        if strcmp(button, 'Yes')
-            error('Aborted work.');
-        end
-    end
-    m1= m2; p1= p2; c1= c2;
-else
+[m1, p1, c1]= get_saved_params( ifname0, bfname, options );
+if isempty(m1)
+    % run from raw parameters data
     m1= model; % add cTw into model "m1", and convert to an array "params":
     m1.tvec= cTw(1:3,4);
     m1.rvec= invRodrigues(cTw(1:3,1:3));
@@ -145,14 +142,72 @@ c2= costFun( p2 );
 m2= world2camx_params( 'params2struct', p2 );
 
 % --- save data:
-fname= mkfname( bfname, 'mat', struct('outputFormat',2) );
-ifname= ifname0;
-save(fname, 'ifname', 'm1','p1','c1', 'm2','p2','c2', ...
-    'L0','l0', 'X0','x0');
+if def_or_opt( 1, options, 'saveOptimResult')
+    fname= mkfname( bfname, 'mat', struct('outputFormat',2) );
+    ifname= ifname0;
+    save(fname, 'ifname', 'm1','p1','c1', 'm2','p2','c2', ...
+        'L0','l0', 'X0','x0');
+end
 
 % --- return results:
 model= m2;
 cTw= [rodrigues(model.rvec(:)) model.tvec(:)];
+return
+
+
+function [m1, p1, c1]= get_saved_params( ifname0, bfname, options )
+
+% check matching ifname
+fname= choose_filename( bfname, options );
+load(fname, 'ifname')
+if ~strcmp(ifname0, ifname)
+    button= questdlg('Loaded ifname mismatch ifname0. Abort?', ...
+        'Yes','No','No');
+    if strcmp(button, 'Yes')
+        error('Aborted work.');
+    end
+end
+
+% return the saved params
+if def_or_opt( 0, options, 'selectIniParams' )
+    load(fname, 'm1','p1','c1') % saved initial params to set as a start
+else
+    load(fname, 'm2','p2','c2') % saved final params to set as a start
+    m1= m2; p1= p2; c1= c2;
+end
+
+
+function fname= choose_filename( bfname, options )
+
+% get the last found params file
+if ~def_or_opt(0, options, 'chooseParamsFile')
+    fname= filenames_last_only( [bfname '*.mat'] );
+    return
+end
+
+% run from saved parameters data
+d= dir([bfname '*.mat']);
+if isempty(d)
+    error('NO previous params file found');
+end
+x= {};
+for i=1:length(d)
+    x{i,1}= d(i).name;
+end
+[ind, okFlag]= listdlg('PromptString','Select a file', ...
+    'ListString',x, 'ListSize', [200 100]);
+if ~okFlag || isempty(ind)
+    error('User aborted selection');
+end
+fname= x{ind(1),1};
+
+
+% ----------------------------------------------------------
+function show_optimization_running( chooseParamsFile )
+options= struct('optimFlag',1, 'saveOptimResult',0);
+options.chooseParamsFile= chooseParamsFile; % or most recent
+options.selectIniParams= 1; % instead of last
+data_base_chg(options);
 return
 
 
